@@ -1,0 +1,1 @@
+curl -X POST -H "Authorization: Bearer ya29.c.Kp8BGQhaumaIDmlyUfQggkQcHf6z4z5BhdYSkOa79185Yb9QofsnTt_ormHpjrcZ0Q2C0EC3jjmQZtL2UzS-fvZqaHCeiZyv0naOnV1q92pKx2ddue7wPbrhyPeU3T6ev3-ZcMwCkmDbCjp-q_Olg7JimBpO_UaYzVYaO9OlNbJmjMlC8YpRbUO1bJ8DWev0BofJFfM8Y_Re4Q4tJs7yYXZs" -H "Content-Type: application/json; charset=utf-8" https://vision.googleapis.com/v1/images:annotate -d @request.json
