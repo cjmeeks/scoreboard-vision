@@ -1,0 +1,32 @@
+[
+    {
+        "position": 1,
+        "driver": "FireStonie GP",
+        "points": "22"
+    },
+    {
+        "position": 2,
+        "driver": "Vision SimRacing",
+        "points": "20"
+    },
+    {
+        "position": 3,
+        "driver": "Blau Competicio",
+        "points": "16"
+    },
+    {
+        "position": 4,
+        "driver": "CM Racing",
+        "points": "4"
+    },
+    {
+        "position": 5,
+        "driver": "Pasione Racing",
+        "points": "4"
+    },
+    {
+        "position": 6,
+        "driver": "Queso y Dulce Racing Team",
+        "points": "2"
+    }
+]

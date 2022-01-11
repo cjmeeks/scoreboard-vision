@@ -3,8 +3,6 @@ from gimpfu import *
 import gimpfu
 import json
 
-positions = [1,2,3,4,5,6,7,8,9,10,11,12]
-
 base_headers = [
     {"header": 'POS', "driverKey": 'position'},
     {"header": 'DRIVER', "driverKey": 'driver'},
@@ -30,7 +28,7 @@ points_headers = [
     {"header": 'DRIVER', "driverKey": 'driver'},
     {"header": 'POINTS', "driverKey": 'points'},
 ]
-points_col_offset = [ 50, 50, 200]
+points_col_offset = [ 25, 25, 200]
 
 points_scoreboard_config = {
     "width": 1920,
@@ -73,10 +71,10 @@ global currentConfig
 rows={}
 cols={}
 
-def calculateRows(img, layer):
+def calculateRows(img, layer, data):
     rows['header'] = (img.height / 2 - layer.height / 2) + (70)
-    for position in positions:
-        rows[position - 1] = (img.height / 2 - layer.height / 2) + (100 + (35 * (position - 1)))
+    for position in range(len(data)):
+        rows[position] = (img.height / 2 - layer.height / 2) + (100 + (35 * (position)))
 
 def calculateCols(img, currentConfig):
     index=0
@@ -87,15 +85,16 @@ def calculateCols(img, currentConfig):
         cols[header['driverKey']] = img.width / 2 - currentConfig['background_width'] / 2 + (100 * (index)) + currentConfig['col_offsets'][index]
         index += 1
 
-def getCorrectConfig(configKey, header_prefix):
+def getCorrectConfig(configKey, header_prefix, data):
     currentConfig = configs[configKey]
     currentConfig['header_prefix'] = header_prefix
+    currentConfig['background_height'] = 35 * len(data) + 100
     return currentConfig
 
 def execPlugin(img, layer, dataFile, headerPrefix, configKey) :
     f = open(dataFile)
     data = json.load(f)
-    currentConfig = getCorrectConfig(configKey, headerPrefix)
+    currentConfig = getCorrectConfig(configKey, headerPrefix, data)
     print(currentConfig)
 
     for driver in data:
@@ -110,7 +109,7 @@ def execPlugin(img, layer, dataFile, headerPrefix, configKey) :
     scoreboard_background_layer = create_scoreboard_background(img, currentConfig)
 
     calculateCols(img, currentConfig)
-    calculateRows(img, scoreboard_background_layer)
+    calculateRows(img, scoreboard_background_layer, data)
 
     create_scoreboard_header(img, scoreboard_background_layer, currentConfig)
     create_line(img, scoreboard_background_layer, background_layer)
@@ -169,13 +168,11 @@ def createHeaders(img, headers):
         pdb.gimp_image_add_layer(img, headerLayer, 0)
 
 def createContent(img, data, headers):
-    for position in positions:
-        driver = data[position - 1]
-        driverKeys = driver.keys()
-        print(driverKeys)
+    for position in range(len(data)):
+        driver = data[position]
         for i in range(len(driver)):
             newLayer = pdb.gimp_text_layer_new(img, driver[headers[i]['driverKey'].lower()], 'Exo Ultra-Bold Italic', 20.0, 0)
-            pdb.gimp_layer_set_offsets(newLayer, cols[headers[i]['driverKey']], rows[position - 1])
+            pdb.gimp_layer_set_offsets(newLayer, cols[headers[i]['driverKey']], rows[position])
             pdb.gimp_image_add_layer(img, newLayer, 0)
 
 gimpfu.register(
