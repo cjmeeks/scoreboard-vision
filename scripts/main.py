@@ -70,7 +70,7 @@ def create_drivers(drivers):
     return newDrivers
 
 
-myconfig = r"--psm 6 --oem 3"
+myconfig = r"--psm 11 --oem 3"
 
 img = cv2.imread("../images/ICSTCF.png")
 
