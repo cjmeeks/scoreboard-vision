@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['CircuitSuperstarsResultReader.py'],
+a = Analysis(['C:/Users/cjmeeks/dev/scoreboard-vision/resultReader/CircuitSuperstarsResultReader.py'],
              pathex=[],
              binaries=[],
              datas=[],

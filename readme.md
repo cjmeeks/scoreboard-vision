@@ -7,6 +7,8 @@
 
 ## Prerequisites
 
+- Install Tesseract OCR to C:\Program Files\Tesseract-OCR (This is the default install location)
+  - Install from https://github.com/UB-Mannheim/tesseract/wiki
 - Input Image (Example)
   ![](images\direct.png)
 - Output file created either .txt or .json
@@ -96,7 +98,8 @@
 ## Installation
 
 - You can download the latest .exe executable in the releases tab
-- thats it, just put the exe where every you want and open it to run the program
+- Install Tesseract OCR to C:\Program Files\Tesseract-OCR (This is the default install location)
+  - Install from https://github.com/UB-Mannheim/tesseract/wiki
 
 ## Prerequisites
 

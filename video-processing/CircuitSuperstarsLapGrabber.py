@@ -13,6 +13,9 @@ import itertools
 import PySimpleGUI as sg
 import json
 import multiprocessing as mp
+import os
+
+os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
 
 
 sg.theme('Material1')
