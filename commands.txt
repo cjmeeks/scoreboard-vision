@@ -3,8 +3,8 @@ curl -X POST -H "Authorization: Bearer ya29.c.Kp8BGQhaumaIDmlyUfQggkQcHf6z4z5Bhd
 
 Python fu console
 import sys
-sys.path=[gimp.directory+'/plug-ins]+sys.path
+sys.path=[gimp.directory+'/plug-ins']+sys.path
 import pythonfu # the plugin
-image=gimp.image_list[0]
-pythonfu.execPlugin(image, "C:\Users\cjmeeks\dev\scoreboard-vision\data\image.json", "TEST", "base")
+image=gimp.image_list()[0]
+pythonfu.execPlugin(image, "C:\Users\cjmeeks\dev\scoreboard-vision\scripts\image-data\23-20-16.json", "TEST", "laps")
 reload(pythonfu)
