@@ -10,12 +10,38 @@ from collections import Counter
 from datetime import datetime
 import concurrent.futures
 import itertools
+import PySimpleGUI as sg
+import json
+import multiprocessing as mp
 
+
+sg.theme('Material1')
+layout = [
+    [sg.Text('Video To Read'), sg.FileBrowse()],
+    [sg.Text('Output file'), sg.FileBrowse()],
+    [sg.Button('Ok'), sg.Button('Cancel')]
+]
+
+window = sg.Window('CSUP Result Reader', layout)
+
+video = ''
+outputFile = ''
+while True:
+    event, values = window.read()
+    if event == 'Ok':  # if user closes window or clicks cancel
+        video = values['Browse']
+        outputFile = values['Browse0']
+        window.close()
+        break
+    if event == sg.WIN_CLOSED or event == 'Cancel':
+        window.close()
+
+image_path = video
 # image_path = 'D:\Renders\ICSTC LAPS.mov'
 # image_path = 'D:\Renders\ICSTC LAPSmp4.mp4'
 # image_path = 'F:\youtube\laps.mov'
 # image_path = 'D:\Raw Videos\Circuit SuperStars\Jan21\ICS\Round 2\TC\RD2TCLaps.mov'
-image_path = 'D:\Raw Videos\Circuit SuperStars\Jan21\ICS\Round 2\AS\laps.mov'
+# image_path = 'D:\Raw Videos\Circuit SuperStars\Jan21\ICS\Round 2\AS\laps.mov'
 
 
 fvs = cv2.VideoCapture(image_path)
@@ -54,12 +80,14 @@ while True:
     ret, thresh = cv2.threshold(frame, 190, 255, cv2.THRESH_BINARY)
     frameCount += 1
 
+    sg.one_line_progress_meter('Reading In Frames', frameCount, totalFrames)
+
     if toggle:
         if count >= 10:
             toggle = not toggle
         frames_to_process.append(frameCount)
-    cv2.imshow("Frame", thresh)
-    cv2.waitKey(1)
+    # cv2.imshow("Frame", thresh)
+    # cv2.waitKey(1)
     count += 1
 
 arrays = np.array_split(frames_to_process, 16)
@@ -108,11 +136,13 @@ def get_laps_from_data(laps):
 
 # new_results = process_frames(frames_to_process)
 new_results = []
+sg.PopupNonBlocking('Processing Frames',
+                    'Processing Frames. This WILL take some time. Another window will appear when done')
+
 with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
     new_results = list(executor.map(process_frames, arrays))
 
 new_results = list(itertools.chain.from_iterable(new_results))
-
 
 new_laps = get_laps_from_data(new_results)
 counts = dict(Counter(get_laps_from_data(new_laps)))
@@ -126,16 +156,18 @@ for i in range(len(counts)):
 
 jsonString = json.dumps(new_laps, indent=4, sort_keys=False)
 jsonFile = open(
-    "scripts/image-data/" + datetime.now().strftime("%H-%M-%S") + ".json", "w")
+    outputFile, "w")
 jsonFile.write(jsonString)
 jsonFile.close()
 
 jsonString = json.dumps(new_results, indent=4, sort_keys=False)
 jsonFile = open(
-    "scripts/image-data/" + datetime.now().strftime("%H-%M-%S") + "-raw.json", "w")
+    outputFile + "-raw.json", "w")
 jsonFile.write(jsonString)
 jsonFile.close()
 
 
 cv2.destroyAllWindows()
 fvs.release()
+
+sg.PopupAutoClose('Done! Content exported to file: ' + outputFile)
