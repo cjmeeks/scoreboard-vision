@@ -1,158 +1,162 @@
-from email import header
-from email.mime import image
-from PIL import Image
-import sys
+import re
+import json
+import pytesseract
+from pytesseract import Output
+import cv2
+from datetime import datetime
+import PySimpleGUI as sg
+import os
 import csv
 
-import pyocr
-import pyocr.builders
-import cv2
-import re
-import PySimpleGUI as sg
-import json
-import os
+os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
+# window
+sg.theme('Material1')
 
-try:
-    # pyocr.tesseract.TESSERACT_CMD = r"./tesseract/tesseract.exe"
-    os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
-    # ruta donde se encuentre su tresseract
+layout = [
+    [sg.Text('Image To Read'), sg.FileBrowse()],
+    [sg.Text('Output file'), sg.FileBrowse()],
+    [sg.Text('Choose output format')],
+    [sg.Combo(['csv', 'json'], default_value='json', key='output_format')],
+    [sg.Button('Ok'), sg.Button('Cancel')]
+]
 
-    sg.theme('Material1')
+window = sg.Window('CSUP Result Reader', layout)
 
-    layout = [
-        [sg.Text('Image To Read'), sg.FileBrowse()],
-        [sg.Text('Output file'), sg.FileBrowse()],
-        [sg.Text('Choose output format')],
-        [sg.Combo(['csv', 'json'], default_value='json', key='output_format')],
-        [sg.Button('Ok'), sg.Button('Cancel')]
-    ]
+imageInput = ''
+outputFile = ''
+outputFormat = ''
+while True:
+    event, values = window.read()
+    if event == 'Ok':  # if user closes window or clicks cancel
+        imageInput = values['Browse']
+        outputFile = values['Browse0']
+        outputFormat = values['output_format']
+        window.close()
+        break
+    if event == sg.WIN_CLOSED or event == 'Cancel':
+        window.close()
+        break
 
-    window = sg.Window('CSUP Result Reader', layout)
 
-    imageInput = ''
-    outputFile = ''
-    outputFormat = ''
-    while True:
-        event, values = window.read()
-        print(values)
-        if event == 'Ok':  # if user closes window or clicks cancel
-            imageInput = values['Browse']
-            outputFile = values['Browse0']
-            outputFormat = values['output_format']
-            window.close()
-            break
-        if event == sg.WIN_CLOSED or event == 'Cancel':
-            window.close()
+class Driver:
+    def __init__(self, name, time, gap, lap):
+        self.name = name
+        self.time = time
+        self.gap = gap
+        self.lap = lap
 
-    image = imageInput
 
-    class ImageProcessor:
-        tool = {}
-        lang = 'eng'
+cars = ['Panther', 'Feather', 'Bonk', 'Storm', 'Osprey', 'Adgitator',
+        'Brusso', 'Mantra', 'Piccino', 'Conquest', 'Vost', 'Loose Cannon']
 
-        def __init__(self):
-            tools = pyocr.get_available_tools()
-            print(tools)
-            if len(tools) == 0:
-                print("No OCR tool found")
-                # sg.Popup(
-                #     'Tesseract OCR not installed at C:\Program Files\Tesseract-OCR')
-                window = sg.Window('CSUP Result Reader', [
-                    [sg.Text('Error!!! Tesseract OCR not installed at C:\Program Files\Tesseract-OCR')]])
-                window.read()
-                sys.exit(1)
-            # The tools are returned in the recommended order of usage
-            self.tool = tools[0]
-            print("Will use tool '%s'" % (self.tool.get_name()))
-            # Ex: Will use tool 'libtesseract'
 
-            langs = self.tool.get_available_languages()
-            print("Available languages: %s" % ", ".join(langs))
-            self.lang = langs[0]
-            print("Will use lang '%s'" % (self.lang))
+def get_driver_info(infos):
+    driverInfo = []
+    count = 0
+    index = 0
+    while index < len(infos):
+        match = re.search("\d{1}:\d{2}.\d{3}", infos[index])
+        if(match):
+            count += 1
+            if (count == 3):
+                count = 0
+                info = infos[0:index + 1]
+                driverInfo.append(info)
+                del infos[0:index + 1]
+                index = 0
+        index += 1
+    return driverInfo
 
-        def process_image(self, image):
-            return self.tool.image_to_string(
-                image,
-                lang="eng",
-                builder=pyocr.builders.LineBoxBuilder()
-            )
 
-        def get_content(self, item):
-            return re.sub('\,', '.', item.content)
+def clean_time(item):
+    return re.sub('\,', '.', item)
 
-        def process_results(self, results):
-            items = list(map(self.get_content, results))
-            header_indexes = {}
-            content = {}
 
-            for index, item in enumerate(items):
-                match = re.search("DRIVER|GAP|TIME|BEST LAP|CAR", item)
-                if match:
-                    header_indexes[match.group(0)] = index
+def create_drivers(drivers):
+    newDrivers = []
+    position = 1
+    for driver in drivers:
+        indexOfStats = 0
+        for car in cars:
+            if car in driver:
+                driver.remove(car)
+        for item in driver:
+            match = re.search("\d{1}:\d{2}.\d{3}", item)
+            if(match):
+                indexOfStats = driver.index(item)
+                break
+        nameArray = driver[0:indexOfStats]
+        statsArray = driver[indexOfStats:len(driver)]
+        name = " ".join(nameArray)
+        time = statsArray[0]
+        gap = statsArray[1]
+        lap = statsArray[2]
+        newDriver = {
+            "position": position,
+            "driver": re.sub('[^a-zA-Z0-9\\|\\s]', '', name),
+            "time": clean_time(time),
+            "gap": clean_time(gap),
+            "lap": clean_time(lap),
+        }
+        position += 1
+        newDrivers.append(newDriver)
+    return newDrivers
 
-            headers = list(header_indexes.keys())
-            indexes = list(header_indexes.values())
-            for index, header_index in enumerate(indexes):
-                if index >= len(indexes) - 1:
-                    content[headers[index]
-                            ] = items[header_index+1:len(items) - 1]
-                else:
-                    content[headers[index]] = items[header_index +
-                                                    1:indexes[index + 1]]
-            return content
 
-    def output(data, format):
-        print(format)
-        if format == 'json':
-            jsonString = json.dumps(data, indent=4, sort_keys=False)
-            jsonFile = open(outputFile, "w")
-            jsonFile.write(jsonString)
-            jsonFile.close()
-        if format == 'csv':
-            fnames = dict(data).keys()
-            f = open(outputFile, 'w')
-            writer = csv.writer(f)
-            drivers = []
-            for i in range(len(data[list(data.keys())[0]])):
-                driver = []
-                for key in fnames:
-                    driver.append(data[key][i])
-                drivers.append(driver)
-                print(drivers)
-            writer.writerows(drivers)
-        return data
+def output(data, format):
+    if format == 'json':
+        jsonString = json.dumps(data, indent=4, sort_keys=False)
+        jsonFile = open(outputFile, "w")
+        jsonFile.write(jsonString)
+        jsonFile.close()
+    if format == 'csv':
+        f = open(outputFile, 'w', newline='')
+        writer = csv.writer(f)
+        headers = dict(data[0]).keys()
+        drivers = []
+        for i in range(len(data)):
+            drivers.append(dict(data[i]).values())
+        writer.writerow(headers)
+        writer.writerows(drivers)
+    return data
 
-    img = cv2.imread(image)
 
-    ret, thresh = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
+def read_and_process():
+    myconfig = r"--psm 6 --oem 3"
+
+    img = cv2.imread(imageInput)
+
+    ret, thresh = cv2.threshold(img, 210, 255, cv2.THRESH_BINARY)
     thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_BINARY)
 
-    # cv2.imshow("img", thresh)
-    # cv2.waitKey(0)
+    dataHSV = pytesseract.image_to_data(
+        thresh, config=myconfig, output_type=Output.DICT)
 
-    img = Image.fromarray(thresh)
+    texts = dataHSV['text']
+    newTexts = []
 
-    image_processor = ImageProcessor()
+    amount_boxes = len(texts)
+    for i in range(amount_boxes):
+        if(texts[i] != ''):
+            newTexts.append(texts[i])
 
-    content = image_processor.process_image(img)
-    content = image_processor.process_results(content)
-    print('here')
-    output(content, outputFormat)
+    arrays = []
+    for text in newTexts:
+        arrays.append(text)
 
-    sg.PopupAutoClose('Done! Content exported to file: ' + outputFile)
+    headers = []
+    for el in arrays:
+        if el in ["POS", 'DRIVER', "TIME", "GAP", "BEST"]:
+            if el == "BEST":
+                headers.append("BEST LAP")
+            else:
+                headers.append(el)
+    arrays.index("LAP")
+    del arrays[0:arrays.index("LAP")]
+    arrays.pop(0)
+    return arrays
 
-except Exception as e:
-    layout = [
-        [sg.Text('Error!' + str(e))]
-    ]
 
-    window = sg.Window('CSUP Result Reader', layout)
-
-    print('Unexpected error:' + str(e))
-    while True:
-        event, values = window.read()
-        print(values)
-        if event == sg.WIN_CLOSED:
-            window.close()
+arrays = read_and_process()
+output(create_drivers(get_driver_info(arrays)), outputFormat)
