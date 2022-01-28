@@ -56,7 +56,7 @@ while True:
 
 fvs = cv2.VideoCapture(image_path)
 time.sleep(0.1)
-myconfig = r"--psm 7 --oem 3"
+myconfig = r"--psm 6 --oem 3"
 count = 0
 frameCount = 0
 toggle = False
@@ -111,7 +111,7 @@ def process_frames(arr):
               " of " + str(len(arr)))
         fvs2.set(1, frame_index)
         ret, frame = fvs2.read()
-        frame = frame[160:200, 1770:1880]
+        frame = frame[160:200, 1750:1880]
         if ret:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             ret, thresh = cv2.threshold(frame, 190, 255, cv2.THRESH_BINARY)
