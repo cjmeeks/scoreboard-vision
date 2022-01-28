@@ -96,8 +96,6 @@ while True:
         if count >= 10:
             toggle = not toggle
         frames_to_process.append(frameCount)
-    cv2.imshow("Frame", thresh)
-    cv2.waitKey(1)
     count += 1
 
 
@@ -113,13 +111,11 @@ def process_frames(arr):
               " of " + str(len(arr)))
         fvs2.set(1, frame_index)
         ret, frame = fvs2.read()
+        frame = frame[160:200, 1770:1880]
         if ret:
-            frame = frame[160:200, 1770:1880]
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame = np.dstack([frame, frame, frame])
             ret, thresh = cv2.threshold(frame, 190, 255, cv2.THRESH_BINARY)
-
-            cv2.imshow("cropped", frame)
+            cv2.imshow("cropped", thresh)
             cv2.waitKey(1)
 
             data = pytesseract.image_to_data(
