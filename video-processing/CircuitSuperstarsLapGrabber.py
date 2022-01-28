@@ -7,42 +7,49 @@ import time
 import numpy as np
 import re
 from collections import Counter
-from datetime import datetime
 import concurrent.futures
 import itertools
 import PySimpleGUI as sg
 import json
-import multiprocessing as mp
 import os
+import csv
+import sys
+
+threads = 8
 
 os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
-
 
 sg.theme('Material1')
 layout = [
     [sg.Text('Video To Read'), sg.FileBrowse()],
     [sg.Text('Output file'), sg.FileBrowse()],
+    [sg.Text('Choose output format')],
+    [sg.Combo(['csv', 'json'], default_value='json', key='output_format')],
     [sg.Button('Ok'), sg.Button('Cancel')]
 ]
 
 window = sg.Window('CSUP Result Reader', layout)
 
-video = ''
+image_path = ''
 outputFile = ''
+output_format = ''
 while True:
     event, values = window.read()
     if event == 'Ok':  # if user closes window or clicks cancel
-        video = values['Browse']
+        image_path = values['Browse']
         outputFile = values['Browse0']
+        output_format = values['output_format']
         window.close()
         break
     if event == sg.WIN_CLOSED or event == 'Cancel':
         window.close()
+        sys.exit(1)
 
-image_path = video
+# image_path = video
 # image_path = 'D:\Renders\ICSTC LAPS.mov'
 # image_path = 'D:\Renders\ICSTC LAPSmp4.mp4'
 # image_path = 'F:\youtube\laps.mov'
+# outputFile = 'F:\youtube\\x.json'
 # image_path = 'D:\Raw Videos\Circuit SuperStars\Jan21\ICS\Round 2\TC\RD2TCLaps.mov'
 # image_path = 'D:\Raw Videos\Circuit SuperStars\Jan21\ICS\Round 2\AS\laps.mov'
 
@@ -93,9 +100,8 @@ while True:
     # cv2.waitKey(1)
     count += 1
 
-arrays = np.array_split(frames_to_process, 16)
-print(arrays)
 
+arrays = np.array_split(frames_to_process, threads)
 raw_results = []
 
 
@@ -108,18 +114,22 @@ def process_frames(arr):
         fvs2.set(1, frame_index)
         ret, frame = fvs2.read()
         if ret:
+            frame = frame[160:200, 1770:1880]
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             frame = np.dstack([frame, frame, frame])
             ret, thresh = cv2.threshold(frame, 190, 255, cv2.THRESH_BINARY)
+
+            cv2.imshow("cropped", frame)
+            cv2.waitKey(1)
 
             data = pytesseract.image_to_data(
                 thresh, config=myconfig, output_type=Output.DICT)
 
             for i in range(len(data['text'])):
+                print(data['text'])
                 match = re.search("\d{1}:\d+(.|,)\d+", data['text'][i])
                 # raw_results.append(data['text'][i])
                 if(match):
-                    print(data['text'][i])
                     results.append(data['text'][i])
     fvs2.release()
     return results
@@ -137,38 +147,53 @@ def get_laps_from_data(laps):
     return new_laps
 
 
+def clean_time(item):
+    return re.sub('\,', '.', item)
+
+
 # new_results = process_frames(frames_to_process)
 new_results = []
 sg.PopupNonBlocking('Processing Frames',
                     'Processing Frames. This WILL take some time. Another window will appear when done')
 
-with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
     new_results = list(executor.map(process_frames, arrays))
 
 new_results = list(itertools.chain.from_iterable(new_results))
 
 new_laps = get_laps_from_data(new_results)
 counts = dict(Counter(get_laps_from_data(new_laps)))
-print(counts)
 
-new_laps = dict()
+new_laps = []
 count_keys = list(counts.keys())
 for i in range(len(counts)):
-    new_laps[i] = count_keys[i]
+    new_laps.append({
+        "lap": i+1,
+        "time": clean_time(count_keys[i])
+    })
+    # new_laps[i+1] = clean_time(count_keys[i])
 
 
-jsonString = json.dumps(new_laps, indent=4, sort_keys=False)
-jsonFile = open(
-    outputFile, "w")
-jsonFile.write(jsonString)
-jsonFile.close()
+def output(data, format):
+    if format == 'json':
+        jsonString = json.dumps(data, indent=4, sort_keys=False)
+        jsonFile = open(outputFile, "w")
+        jsonFile.write(jsonString)
+        jsonFile.close()
+    if format == 'csv':
+        f = open(outputFile, 'w', newline='')
+        writer = csv.writer(f)
+        headers = ["Laps", "Time"]
+        print(data)
+        laps = []
+        for i in range(len(data)):
+            laps.append(data[i].values())
+        writer.writerow(headers)
+        writer.writerows(laps)
+    return data
 
-jsonString = json.dumps(new_results, indent=4, sort_keys=False)
-jsonFile = open(
-    outputFile + "-raw.json", "w")
-jsonFile.write(jsonString)
-jsonFile.close()
 
+output(new_laps, output_format)
 
 cv2.destroyAllWindows()
 fvs.release()
