@@ -96,8 +96,8 @@ while True:
         if count >= 10:
             toggle = not toggle
         frames_to_process.append(frameCount)
-    # cv2.imshow("Frame", thresh)
-    # cv2.waitKey(1)
+    cv2.imshow("Frame", thresh)
+    cv2.waitKey(1)
     count += 1
 
 
@@ -125,8 +125,8 @@ def process_frames(arr):
             data = pytesseract.image_to_data(
                 thresh, config=myconfig, output_type=Output.DICT)
 
+            print(data['text'])
             for i in range(len(data['text'])):
-                print(data['text'])
                 match = re.search("\d{1}:\d+(.|,)\d+", data['text'][i])
                 # raw_results.append(data['text'][i])
                 if(match):
