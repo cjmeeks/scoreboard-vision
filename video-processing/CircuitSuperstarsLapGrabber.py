@@ -170,7 +170,9 @@ for i in range(len(counts)):
     # new_laps[i+1] = clean_time(count_keys[i])
 
 
-def output(data, format):
+def output(data, format, outputFile):
+    if outputFile == '':
+        outputFile = 'output.txt'
     if format == 'json':
         jsonString = json.dumps(data, indent=4, sort_keys=False)
         jsonFile = open(outputFile, "w")
@@ -189,7 +191,7 @@ def output(data, format):
     return data
 
 
-output(new_laps, output_format)
+output(new_laps, output_format, outputFile)
 
 cv2.destroyAllWindows()
 fvs.release()
