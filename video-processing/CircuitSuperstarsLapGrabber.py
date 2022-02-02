@@ -93,7 +93,7 @@ while True:
     sg.one_line_progress_meter('Reading In Frames', frameCount, totalFrames)
 
     if toggle:
-        if count >= 10:
+        if count >= 5:
             toggle = not toggle
         frames_to_process.append(frameCount)
     count += 1
