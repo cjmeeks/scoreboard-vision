@@ -9,6 +9,7 @@ from datetime import datetime
 import PySimpleGUI as sg
 import os
 import csv
+from difflib import SequenceMatcher
 
 os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
 # window
@@ -182,22 +183,22 @@ def output(result_drivers, quali_drivers, format, outputFile):
         writer.writerow(quali_headers)
         writer.writerows(quali_ds)
     if format == 'csup-stats':
-        quali_drivers = convert_drivers_csup_stats(quali_drivers, True)
-        result_drivers = convert_drivers_csup_stats(result_drivers, False)
+        # quali_drivers = convert_drivers_csup_stats(quali_drivers, True)
+        # result_drivers = convert_drivers_csup_stats(result_drivers, False)
+        combined_drivers = combine_drivers(result_drivers, quali_drivers)
         f = open(outputFile, 'w', newline='')
         writer = csv.writer(f)
-        result_headers = dict(result_drivers[0]).keys()
-        quali_headers = dict(quali_drivers[0]).keys()
-        result_ds = []
-        for i in range(len(result_drivers)):
-            result_ds.append(dict(result_drivers[i]).values())
-        quali_ds = []
-        for i in range(len(quali_drivers)):
-            quali_ds.append(dict(quali_drivers[i]).values())
-        writer.writerow(result_headers)
-        writer.writerows(result_ds)
-        writer.writerow(quali_headers)
-        writer.writerows(quali_ds)
+        headers = dict(list(dict(combined_drivers).values())[0]).keys()
+        drivers = []
+        for key in dict(combined_drivers).keys():
+            drivers.append(dict(combined_drivers[key]).values())
+        # for i in range(len(result_drivers)):
+        #     result_ds.append(dict(result_drivers[i]).values())
+        # quali_ds = []
+        # for i in range(len(quali_drivers)):
+        #     quali_ds.append(dict(quali_drivers[i]).values())
+        writer.writerow(headers)
+        writer.writerows(drivers)
     return result_drivers
 
 
@@ -278,6 +279,21 @@ def make_driver_object(list):
     return obj
 
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def find_most_similar(key, list):
+    maxSim = 0
+    maxName = ''
+    for driver in dict(list).keys():
+        sim = similar(key, driver)
+        if sim > maxSim:
+            maxSim = sim
+            maxName = driver
+    return maxName
+
+
 def combine_drivers(result, quali):
     # new format = driver,quali_lap_time_seconds,quali_position,race_time_seconds,lappings,fastest_lap_seconds,gets_points_for_fastest_lap ,position
     result = make_driver_object(result)
@@ -285,20 +301,37 @@ def combine_drivers(result, quali):
     new_d = {}
     for key in dict(result).keys():
         result_driver = result[key]
-        quali_driver = quali[result_driver['driver']]
+        quali_driver_name = find_most_similar(key, quali)
+        quali_driver = quali[quali_driver_name]
         new_d[result_driver['driver']] = {
             'driver': result_driver['driver'],
             # need function here
-            'quali_lap_time_seconds': quali_driver['lap'],
+            'quali_lap_time_seconds': convert_time_to_seconds(quali_driver['lap']),
             'quali_position': quali_driver['position'],
-            'race_time_seconds': result_driver['time'],  # need function here
+            # need function here
+            'race_time_seconds': convert_time_to_seconds(result_driver['time']),
             'lappings': '0',
-            'fastest_lap_seconds': result_driver['lap'],  # need function here
-            'gets_points_for_fastest_lap': 0,
+            # need function here
+            'fastest_lap_seconds': convert_time_to_seconds(result_driver['lap']),
+            'gets_points_for_fastest_lap': False,
             'position': result_driver['position'],  # need function here
         }
-
+    fl_name = find_fastest_lap(new_d)
+    driver = new_d[fl_name]
+    driver['gets_points_for_fastest_lap'] = True
+    new_d[fl_name] = driver
     return new_d
+
+
+def find_fastest_lap(drivers):
+    minLap = 100
+    minName = ''
+    for driver in dict(drivers).keys():
+        lap = float(drivers[driver]['fastest_lap_seconds'])
+        if lap < minLap:
+            minLap = lap
+            minName = driver
+    return minName
 
 
 result_drivers = None
@@ -312,5 +345,7 @@ if quali_input:
     quali_arrays = read_and_process(quali_input)
     quali_drivers = create_drivers(get_driver_info(quali_arrays, True), True)
 
+
+combine_drivers(result_drivers, quali_drivers)
 
 output(result_drivers, quali_drivers, outputFormat, outputFile)
