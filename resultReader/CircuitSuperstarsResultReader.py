@@ -1,7 +1,9 @@
 from lib2to3.pgen2 import driver
+from operator import index
 import re
 import json
 from unittest import result
+from numpy import empty
 import pytesseract
 from pytesseract import Output
 import cv2
@@ -92,20 +94,23 @@ def get_driver_info(infos, is_quali):
         match = re.search("\d{1}:\d{2}.\d{3}", infos[index])
         if(match):
             count += 1
-
             if not is_quali and count == 3:
                 count = 0
                 info = infos[0:index + 1]
-                driverInfo.append(info)
+                driverInfo = info
                 del infos[0:index + 1]
                 index = 0
             if is_quali and count == 2:
                 count = 0
                 info = infos[0:index + 1]
-                driverInfo.append(info)
+                driverInfo = info
                 del infos[0:index + 1]
                 index = 0
+
         index += 1
+    if driverInfo == []:
+        driverInfo = infos
+    print(driverInfo)
     return driverInfo
 
 
@@ -120,27 +125,41 @@ def create_drivers(drivers, is_quali):
     newDrivers = []
     position = 1
     for driver in drivers:
-        indexOfStats = 0
+        indexOfStats = []
         for car in cars:
             if car in driver:
                 driver.remove(car)
         for item in driver:
-            match = re.search("\d{1}:\d{2}.\d{3}", item)
+            match = re.search("\d+(:|.)\d+.\d+", item)
             if(match):
-                indexOfStats = driver.index(item)
-                break
-        nameArray = driver[0:indexOfStats]
-        statsArray = driver[indexOfStats:len(driver)]
-        name = " ".join(nameArray)
+                indexOfStats.append(driver.index(item))
+        name = "Driver"
+        time, gap, lap = '00:00.000', '00:00.000', '00:00.000'
+        if len(indexOfStats) != 0:
+            print()
+            nameArray = driver[0:indexOfStats[0]]
+            name = " ".join(nameArray)
+            print(indexOfStats)
+            print(driver)
 
-        time, gap, lap = None, None, None
-        if is_quali:
-            lap = statsArray[0]
-            gap = statsArray[1]
+            if is_quali:
+                lap = driver[indexOfStats[0]]
+                gap = driver[indexOfStats[1]]
+            else:
+                if len(indexOfStats) == 1:
+                    print('here------------------')
+                    lap = driver[indexOfStats[0]]
+                else:
+                    time = driver[indexOfStats[0]]
+                    gap = driver[indexOfStats[1]] if 1 < len(
+                        indexOfStats) else '00:00.000'
+                    lap = driver[indexOfStats[2]] if 2 < len(
+                        indexOfStats) else '00:00.000'
         else:
-            time = statsArray[0]
-            gap = statsArray[1]
-            lap = statsArray[2]
+            nameArray = driver
+            laptime = driver[len(driver) - 1]
+            name = " ".join(nameArray)
+            lap = laptime
 
         newDriver = {
             "position": position,
@@ -183,8 +202,6 @@ def output(result_drivers, quali_drivers, format, outputFile):
         writer.writerow(quali_headers)
         writer.writerows(quali_ds)
     if format == 'csup-stats':
-        # quali_drivers = convert_drivers_csup_stats(quali_drivers, True)
-        # result_drivers = convert_drivers_csup_stats(result_drivers, False)
         combined_drivers = combine_drivers(result_drivers, quali_drivers)
         f = open(outputFile, 'w', newline='')
         writer = csv.writer(f)
@@ -192,11 +209,6 @@ def output(result_drivers, quali_drivers, format, outputFile):
         drivers = []
         for key in dict(combined_drivers).keys():
             drivers.append(dict(combined_drivers[key]).values())
-        # for i in range(len(result_drivers)):
-        #     result_ds.append(dict(result_drivers[i]).values())
-        # quali_ds = []
-        # for i in range(len(quali_drivers)):
-        #     quali_ds.append(dict(quali_drivers[i]).values())
         writer.writerow(headers)
         writer.writerows(drivers)
     return result_drivers
@@ -217,28 +229,54 @@ def read_and_process(image_input):
         thresh, config=myconfig, output_type=Output.DICT)
 
     texts = dataHSV['text']
+    lineNums = dataHSV['line_num']
+
+    # print(dataHSV)
+
+    # print(texts)
     newTexts = []
+    lines = {
+        0: [],
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+        5: [],
+        6: [],
+        7: [],
+        8: [],
+        9: [],
+        10: [],
+        11: [],
+        12: [],
+        13: [],
+        14: [],
+        15: [],
+        16: [],
+        17: [],
+        18: [],
+        19: [],
+        20: [],
+
+    }
 
     amount_boxes = len(texts)
     for i in range(amount_boxes):
-        if(texts[i] != ''):
-            newTexts.append(texts[i])
+        lines[lineNums[i]].append(texts[i])
 
-    arrays = []
-    for text in newTexts:
-        arrays.append(text)
+    find_headers(lines)
+    return lines
 
+
+def find_headers(lines):
     headers = []
-    for el in arrays:
+    for el in lines[2]:
         if el in ["POS", 'DRIVER', "TIME", "GAP", "BEST"]:
             if el == "BEST":
                 headers.append("BEST LAP")
             else:
                 headers.append(el)
-    arrays.index("LAP")
-    del arrays[0:arrays.index("LAP")]
-    arrays.pop(0)
-    return arrays
+    return headers
 
 
 def convert_time_to_seconds(time):
@@ -271,10 +309,10 @@ def convert_drivers_csup_stats(list, is_quali):
     return new_list
 
 
-def make_driver_object(list):
+def make_driver_object(x):
     obj = {}
-    for i in range(len(list)):
-        driver = list[i]
+    for i in range(len(x)):
+        driver = x[i]
         obj[driver['driver']] = driver
     return obj
 
@@ -334,18 +372,31 @@ def find_fastest_lap(drivers):
     return minName
 
 
+def find_header_row(lines):
+    i = 0
+    for line in list(lines):
+        for el in line:
+            if el in ["POS", 'DRIVER', "TIME", "GAP", "BEST"]:
+                return i + 1
+        i += 1
+    return 3
+
+
 result_drivers = None
 if result_input:
-    result_arrays = read_and_process(result_input)
+    lines = read_and_process(result_input)
+    lines = lines.values()
+    firstDriverIndex = find_header_row(lines)
+    drivers = []
+    for infos in list(lines)[firstDriverIndex:firstDriverIndex + 12]:
+        drivers.append(get_driver_info(infos, False))
     result_drivers = create_drivers(
-        get_driver_info(result_arrays, False), False)
+        drivers, False)
 
 quali_drivers = None
 if quali_input:
     quali_arrays = read_and_process(quali_input)
     quali_drivers = create_drivers(get_driver_info(quali_arrays, True), True)
 
-
-combine_drivers(result_drivers, quali_drivers)
 
 output(result_drivers, quali_drivers, outputFormat, outputFile)

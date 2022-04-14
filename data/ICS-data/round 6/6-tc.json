@@ -1,0 +1,86 @@
+[
+    {
+        "position": 1,
+        "driver": "StarWrek",
+        "time": "14:30.596",
+        "gap": "00:00.000",
+        "lap": "00:49.227"
+    },
+    {
+        "position": 2,
+        "driver": "Dremet",
+        "time": "14:40.392",
+        "gap": "00:09.795",
+        "lap": "00:49.574"
+    },
+    {
+        "position": 3,
+        "driver": "McVizn",
+        "time": "14:53.411",
+        "gap": "00:22.815",
+        "lap": "00:49.745"
+    },
+    {
+        "position": 4,
+        "driver": "Black Rebel",
+        "time": "--:--.---",
+        "gap": "--:--.---",
+        "lap": "00:51.329"
+    },
+    {
+        "position": 5,
+        "driver": "polruiz12",
+        "time": "--:--.---",
+        "gap": "--:--.---",
+        "lap": "00:50.138"
+    },
+    {
+        "position": 6,
+        "driver": "Bixon",
+        "time": "--:--.---",
+        "gap": "--:--.---",
+        "lap": "00:51.030"
+    },
+    {
+        "position": 7,
+        "driver": "DAONE996",
+        "time": "--:--.---",
+        "gap": "--:--.---",
+        "lap": "00:50.397"
+    },
+    {
+        "position": 8,
+        "driver": "muritopin",
+        "time": "--:--.---",
+        "gap": "--:--.---",
+        "lap": "00:50.900"
+    },
+    {
+        "position": 9,
+        "driver": "cmcmgu",
+        "time": "14:38.387",
+        "gap": "00:07.790",
+        "lap": "00:52.076"
+    },
+    {
+        "position": 10,
+        "driver": "Stonie",
+        "time": "14:47.633",
+        "gap": "00:17.036",
+        "lap": "00:51.858"
+    },
+    {
+        "position": 11,
+        "driver": "mtta.andres",
+        "time": "15:01.537",
+        "gap": "00:30.940",
+        "lap": "00:52.666"
+    },
+    {
+        "position": 12,
+        "driver": "Raust Au Fari",
+        "time": "15:05.609",
+        "gap": "00:35.013",
+        "lap": "00:52.076"
+    }
+]

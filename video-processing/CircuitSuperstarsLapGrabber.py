@@ -71,19 +71,9 @@ def output(data, format, outputFile):
 processor = Processor(threads, image_path)
 processor.read_frames()
 output_laps = processor.process_video()
-s = [127, 591, 923]
+print(output_laps)
 
-output_fuel = processor.process_frames_fuel(list(output_laps.get_lap_frames()))
-output_laps = list(output_laps.toJson())
-laps = []
-for i in range(len(output_laps)):
-    lapss = output_laps
-    lap = lapss[i]
-    lap['fuel'] = output_fuel[i]
-    laps.append(lap)
-
-
-output(laps, output_format, outputFile)
+output(output_laps, output_format, outputFile)
 
 cv2.destroyAllWindows()
 processor.video.release()

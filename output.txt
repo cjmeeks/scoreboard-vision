@@ -1,20 +1,88 @@
-[
-    {
-        "lap": "1",
-        "frame": "127",
-        "lap_time": "00:21.990",
-        "fuel": "89"
-    },
-    {
-        "lap": "2",
-        "frame": "591",
-        "lap_time": "00:21.898",
-        "fuel": "83"
-    },
-    {
-        "lap": "3",
-        "frame": "923",
-        "lap_time": "00:23.080",
-        "fuel": "77"
-    }
-]
+{
+    "results": [
+        {
+            "position": 1,
+            "driver": "StarWrek",
+            "time": "62:05.479",
+            "gap": "00:00.000",
+            "lap": "00:36.186"
+        },
+        {
+            "position": 2,
+            "driver": "Nomosizzle",
+            "time": "62.21.784",
+            "gap": "00:16.305",
+            "lap": "00:36.145"
+        },
+        {
+            "position": 3,
+            "driver": "Gramattive",
+            "time": "62.27.4603",
+            "gap": "00:21.925",
+            "lap": "00:36.225"
+        },
+        {
+            "position": 4,
+            "driver": "Wispa",
+            "time": "62:08.955",
+            "gap": "00:03.477",
+            "lap": "00:37.720"
+        },
+        {
+            "position": 5,
+            "driver": "McVizn",
+            "time": "62:10.288",
+            "gap": "00:04.810",
+            "lap": "00:37.856"
+        },
+        {
+            "position": 6,
+            "driver": "nochence wotet yee woisnyee",
+            "time": "00:00.000",
+            "gap": "00:00.000",
+            "lap": "00:37.956"
+        },
+        {
+            "position": 7,
+            "driver": "whiteVanitan",
+            "time": "00:00.000",
+            "gap": "00:00.000",
+            "lap": "00:37.822"
+        },
+        {
+            "position": 8,
+            "driver": "Nathannw94",
+            "time": "62:18.216",
+            "gap": "00:12.733",
+            "lap": "00:38.138"
+        },
+        {
+            "position": 9,
+            "driver": "Dremet",
+            "time": "62:24.658",
+            "gap": "00:19.179",
+            "lap": "00:36.037"
+        },
+        {
+            "position": 10,
+            "driver": "",
+            "time": "00:00.000",
+            "gap": "00:00.000",
+            "lap": "\\"
+        },
+        {
+            "position": 11,
+            "driver": "",
+            "time": "00:00.000",
+            "gap": "00:00.000",
+            "lap": "\\"
+        },
+        {
+            "position": 12,
+            "driver": "",
+            "time": "00:00.000",
+            "gap": "00:00.000",
+            "lap": "."
+        }
+    ]
+}

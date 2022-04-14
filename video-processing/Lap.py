@@ -6,13 +6,15 @@ class Lap:
         self.frame = frame
         self.lap_time = lap_time
         self.fuel = 0
+        self.tire = 0
 
     def toJson(self):
         return {
             "lap": f"{self.lap}",
             "frame": f"{self.frame}",
             "lap_time": self.lap_time,
-            "fuel": f"{self.fuel}"
+            "fuel": f"{self.fuel}",
+            "tire": f"{self.tire}"
         }
 
 
@@ -34,7 +36,7 @@ class Laps:
 
     def to_lap_object(self, lap, object):
         if not lap.lap_time in object:
-            object[lap.lap_time] = lap
+            object[lap.lap_time] = lap.toJson()
 
     def to_laps_object(self):
         laps_object = {}

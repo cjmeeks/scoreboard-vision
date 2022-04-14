@@ -94,35 +94,6 @@ class Processor:
         fvs2.release()
         return results
 
-    def process_frames_fuel(self, arr):
-        results = []
-        fvs3 = cv2.VideoCapture(self.video_path)
-        for index, frame_index in enumerate(arr):
-            print("processing: " + str(index) +
-                  " of " + str(len(arr)))
-            fvs3.set(1, frame_index)
-            ret, frame = fvs3.read()
-
-            frame = frame[955:980, 225:275]
-
-            if ret:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                ret, thresh = cv2.threshold(frame, 210, 240, cv2.THRESH_BINARY)
-                kernel = np.ones((2, 2), np.uint8)
-                erosion = cv2.erode(thresh, kernel, iterations=1)
-                cv2.imshow("cropped", erosion)
-                cv2.waitKey(1)
-
-                data = pytesseract.image_to_data(
-                    erosion, config=self.config, output_type=Output.DICT)
-
-                for i in range(len(data['text'])):
-                    match = re.search("\d{2}", data['text'][i])
-                    if(match):
-                        results.append(self.clean_fuel(data['text'][i]))
-        fvs3.release()
-        return results
-
     def process_video(self):
         arrays = np.array_split(self.frames_to_process, self.threads)
 
@@ -135,7 +106,37 @@ class Processor:
 
         new_results = list(itertools.chain.from_iterable(new_results))
         new_laps = self.get_laps_from_data(Lap.Laps(new_results))
-        return new_laps
+        return new_laps.to_laps_object()
+
+    def get_fuel_from_frame(self, frame):
+        frame = frame[1020:1040, 160:190]
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(frame, 230, 240, cv2.THRESH_BINARY)
+        kernel = np.ones((1, 1), np.uint8)
+        erosion = cv2.erode(thresh, kernel, iterations=1)
+        # cv2.imshow("cropped", erosion)
+        # cv2.waitKey(0)
+
+        data = pytesseract.image_to_data(
+            erosion, config=r"--psm 6 --oem 3", output_type=Output.DICT)
+        print(data['text'])
+        return data['text'][len(data['text']) - 1]
+
+    def get_tire_from_frame(self, frame):
+        frame = frame[1020:1040, 250:280]
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(frame, 230, 240, cv2.THRESH_BINARY)
+        kernel = np.ones((1, 1), np.uint8)
+        erosion = cv2.erode(thresh, kernel, iterations=1)
+        cv2.imshow("cropped", erosion)
+        cv2.waitKey(0)
+
+        data = pytesseract.image_to_data(
+            erosion, config=r"--psm 6 --oem 3", output_type=Output.DICT)
+        print(data['text'])
+        return data['text'][len(data['text']) - 1]
 
     def get_laps_from_data(self, laps):
         new_laps = []
@@ -151,8 +152,13 @@ class Processor:
         ls = []
         for i in range(len(keys)):
             key = keys[i]
-            l = Lap.Lap(laps[key].frame, key)
-            l.fuel = laps[key].fuel
+            fvs3 = cv2.VideoCapture(self.video_path)
+            fvs3.set(1, int(laps[key]['frame']))
+
+            ret, frame = fvs3.read()
+            l = Lap.Lap(laps[key]['frame'], key)
+            l.fuel = self.get_fuel_from_frame(frame)
+            l.tire = self.get_tire_from_frame(frame)
             l.lap = i + 1
             ls.append(l)
 
