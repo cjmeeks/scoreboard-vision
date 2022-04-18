@@ -4,9 +4,9 @@
 block_cipher = None
 
 
-a = Analysis(['C:/Users/cjmeeks/dev/scoreboard-vision/resultReader/CircuitSuperstarsResultReader.py'],
+a = Analysis(['..\\resultReader\\CircuitSuperstarsResultReader.py'],
              pathex=[],
-             binaries=['C:\Users\cjmeeks\dev\vcpkg\packages\tesseract_x64-windows-static\tools\tesseract'],
+             binaries=[],
              datas=[],
              hiddenimports=[],
              hookspath=[],
@@ -15,7 +15,6 @@ a = Analysis(['C:/Users/cjmeeks/dev/scoreboard-vision/resultReader/CircuitSupers
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
-             include_binaries=True,
              cipher=block_cipher,
              noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data,

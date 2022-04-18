@@ -12,39 +12,8 @@ import PySimpleGUI as sg
 import os
 import csv
 from difflib import SequenceMatcher
-
-os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
-# window
-sg.theme('Material1')
-
-layout = [
-    [sg.Text('Result Image To Read'), sg.FileBrowse()],
-    [sg.Text('Qualification Image To Read'), sg.FileBrowse()],
-    [sg.Text('Output file'), sg.FileBrowse()],
-    [sg.Text('Choose output format')],
-    [sg.Combo(['csv', 'json', 'csup-stats'],
-              default_value='json', key='output_format')],
-    [sg.Button('Ok'), sg.Button('Cancel')]
-]
-
-window = sg.Window('CSUP Result Reader', layout)
-
-result_input = None
-quali_input = None
-outputFile = ''
-outputFormat = ''
-while True:
-    event, values = window.read()
-    if event == 'Ok':  # if user closes window or clicks cancel
-        result_input = values['Browse']
-        quali_input = values['Browse0']
-        outputFile = values['Browse1']
-        outputFormat = values['output_format']
-        window.close()
-        break
-    if event == sg.WIN_CLOSED or event == 'Cancel':
-        window.close()
-        break
+from functools import partial
+import numpy as np
 
 
 class Driver:
@@ -135,31 +104,32 @@ def create_drivers(drivers, is_quali):
                 indexOfStats.append(driver.index(item))
         name = "Driver"
         time, gap, lap = '00:00.000', '00:00.000', '00:00.000'
-        if len(indexOfStats) != 0:
-            print()
-            nameArray = driver[0:indexOfStats[0]]
-            name = " ".join(nameArray)
-            print(indexOfStats)
-            print(driver)
+        if len(driver) > 0:
+            if len(indexOfStats) != 0:
+                print()
+                nameArray = driver[0:indexOfStats[0]]
+                name = " ".join(nameArray)
+                print(indexOfStats)
+                print(driver)
 
-            if is_quali:
-                lap = driver[indexOfStats[0]]
-                gap = driver[indexOfStats[1]]
-            else:
-                if len(indexOfStats) == 1:
-                    print('here------------------')
+                if is_quali:
                     lap = driver[indexOfStats[0]]
+                    gap = driver[indexOfStats[1]]
                 else:
-                    time = driver[indexOfStats[0]]
-                    gap = driver[indexOfStats[1]] if 1 < len(
-                        indexOfStats) else '00:00.000'
-                    lap = driver[indexOfStats[2]] if 2 < len(
-                        indexOfStats) else '00:00.000'
-        else:
-            nameArray = driver
-            laptime = driver[len(driver) - 1]
-            name = " ".join(nameArray)
-            lap = laptime
+                    if len(indexOfStats) == 1:
+                        print('here------------------')
+                        lap = driver[indexOfStats[0]]
+                    else:
+                        time = driver[indexOfStats[0]]
+                        gap = driver[indexOfStats[1]] if 1 < len(
+                            indexOfStats) else '00:00.000'
+                        lap = driver[indexOfStats[2]] if 2 < len(
+                            indexOfStats) else '00:00.000'
+            else:
+                nameArray = driver
+                laptime = driver[len(driver) - 1]
+                name = " ".join(nameArray)
+                lap = laptime
 
         newDriver = {
             "position": position,
@@ -214,14 +184,40 @@ def output(result_drivers, quali_drivers, format, outputFile):
     return result_drivers
 
 
-def read_and_process(image_input):
-    myconfig = r"--psm 6 --oem 3"
+def on_trackbar(val):
+    print(val)
+    # img = cv2.imread(
+    #     "C:/Users/cjmeeks/dev/scoreboard-vision/images/ICS/3-as.png")
+    ret, thresh = cv2.threshold(img, val, 255, cv2.THRESH_BINARY)
+    thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_BINARY)
+    cv2.imshow("test", thresh)
 
+
+def read_and_process(image_input):
+    print(image_input)
+    myconfig = r"--psm 6 --oem 3"
+    global img
     img = cv2.imread(image_input)
 
-    ret, thresh = cv2.threshold(img, 230, 255, cv2.THRESH_BINARY)
-    # cv2.imshow("test", thresh)
-    # cv2.waitKey(0)
+    cv2.namedWindow("test")
+    cv2.createTrackbar("threshhold", "test", 0, 255, on_trackbar)
+    t_value = 100
+    on_trackbar(t_value)
+
+    while(1):
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+
+        t_value = cv2.getTrackbarPos("threshhold", "test")
+        # thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
+        # ret, thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_BINARY)
+        # cv2.imshow("test", thresh)
+        # cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    print(t_value)
+    ret, thresh = cv2.threshold(img, t_value, 255, cv2.THRESH_BINARY)
     thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_BINARY)
 
@@ -229,6 +225,7 @@ def read_and_process(image_input):
         thresh, config=myconfig, output_type=Output.DICT)
 
     texts = dataHSV['text']
+    print(texts)
     lineNums = dataHSV['line_num']
 
     # print(dataHSV)
@@ -264,19 +261,7 @@ def read_and_process(image_input):
     for i in range(amount_boxes):
         lines[lineNums[i]].append(texts[i])
 
-    find_headers(lines)
     return lines
-
-
-def find_headers(lines):
-    headers = []
-    for el in lines[2]:
-        if el in ["POS", 'DRIVER', "TIME", "GAP", "BEST"]:
-            if el == "BEST":
-                headers.append("BEST LAP")
-            else:
-                headers.append(el)
-    return headers
 
 
 def convert_time_to_seconds(time):
@@ -374,29 +359,68 @@ def find_fastest_lap(drivers):
 
 def find_header_row(lines):
     i = 0
+    print(lines)
     for line in list(lines):
         for el in line:
-            if el in ["POS", 'DRIVER', "TIME", "GAP", "BEST"]:
+            print(el)
+            if el in ["POS", 'DRIVER', "CAR", "TIME", "GAP", "BEST", "PILOTE", "VOITURE", "FAHRER", "FAHRZEUG", "ZEIT", "BESTE", "ABSTAND", "RUNDE"]:
                 return i + 1
         i += 1
     return 3
 
 
-result_drivers = None
-if result_input:
-    lines = read_and_process(result_input)
-    lines = lines.values()
-    firstDriverIndex = find_header_row(lines)
-    drivers = []
-    for infos in list(lines)[firstDriverIndex:firstDriverIndex + 12]:
-        drivers.append(get_driver_info(infos, False))
-    result_drivers = create_drivers(
-        drivers, False)
+def main():
+    result_drivers = None
+    if result_input:
+        lines = read_and_process(result_input)
+        lines = lines.values()
+        firstDriverIndex = find_header_row(lines)
+        drivers = []
+        for infos in list(lines)[firstDriverIndex:firstDriverIndex + 12]:
+            drivers.append(get_driver_info(infos, False))
+        result_drivers = create_drivers(
+            drivers, False)
 
-quali_drivers = None
-if quali_input:
-    quali_arrays = read_and_process(quali_input)
-    quali_drivers = create_drivers(get_driver_info(quali_arrays, True), True)
+    quali_drivers = None
+    if quali_input:
+        quali_arrays = read_and_process(quali_input)
+        quali_drivers = create_drivers(
+            get_driver_info(quali_arrays, True), True)
+
+    output(result_drivers, quali_drivers, outputFormat, outputFile)
 
 
-output(result_drivers, quali_drivers, outputFormat, outputFile)
+while(True):
+    os.environ["PATH"] += os.pathsep + "C:\Program Files\Tesseract-OCR"
+    # window
+    sg.theme('Material1')
+
+    layout = [
+        [sg.Text('Result Image To Read'), sg.FileBrowse()],
+        [sg.Text('Qualification Image To Read'), sg.FileBrowse()],
+        [sg.Text('Output file'), sg.FileBrowse()],
+        [sg.Text('Choose output format')],
+        [sg.Combo(['csv', 'json', 'csup-stats'],
+                  default_value='json', key='output_format')],
+        [sg.Button('Ok'), sg.Button('Cancel')]
+    ]
+
+    window = sg.Window('CSUP Result Reader', layout)
+
+    result_input = None
+    quali_input = None
+    outputFile = ''
+    outputFormat = ''
+    while True:
+        event, values = window.read()
+        if event == 'Ok':  # if user closes window or clicks cancel
+            result_input = values['Browse']
+            quali_input = values['Browse0']
+            outputFile = values['Browse1']
+            outputFormat = values['output_format']
+            window.close()
+            break
+        if event == sg.WIN_CLOSED or event == 'Cancel':
+            window.close()
+            exit(0)
+    main()
