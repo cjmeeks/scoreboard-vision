@@ -1,0 +1,9 @@
+driver,quali_lap_time_seconds,quali_position,race_time_seconds,lappings,fastest_lap_seconds,gets_points_for_fastest_lap,position
+FstStarwrek,18.446,2,948.736,0,18.498,False,1
+Fedorov,18.553,6,949.181,0,18.145,False,2
+LULL Gramattive osprey,18.404,1,949.25,0,18.109,False,3
+Silva,18.546,5,949.382,0,18.124,False,4
+avd muritopin osprey,18.49,3,949.504,0,18.17,False,5
+Labro,18.522,4,952.14,0,18.16,False,6
+ORLA,18.522,4,0.0,0,0,True,7
+Driver,0.0,12,0.0,0,0.0,False,12

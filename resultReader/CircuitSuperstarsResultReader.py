@@ -79,7 +79,6 @@ def get_driver_info(infos, is_quali):
         index += 1
     if driverInfo == []:
         driverInfo = infos
-    print(driverInfo)
     return driverInfo
 
 
@@ -106,18 +105,14 @@ def create_drivers(drivers, is_quali):
         time, gap, lap = '00:00.000', '00:00.000', '00:00.000'
         if len(driver) > 0:
             if len(indexOfStats) != 0:
-                print()
                 nameArray = driver[0:indexOfStats[0]]
                 name = " ".join(nameArray)
-                print(indexOfStats)
-                print(driver)
 
                 if is_quali:
                     lap = driver[indexOfStats[0]]
                     gap = driver[indexOfStats[1]]
                 else:
                     if len(indexOfStats) == 1:
-                        print('here------------------')
                         lap = driver[indexOfStats[0]]
                     else:
                         time = driver[indexOfStats[0]]
@@ -185,8 +180,7 @@ def output(result_drivers, quali_drivers, format, outputFile):
 
 
 def on_trackbar(val):
-    print(val)
-    # img = cv2.imread(
+    # img = cvs2.imread(
     #     "C:/Users/cjmeeks/dev/scoreboard-vision/images/ICS/3-as.png")
     ret, thresh = cv2.threshold(img, val, 255, cv2.THRESH_BINARY)
     thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
@@ -195,7 +189,6 @@ def on_trackbar(val):
 
 
 def read_and_process(image_input):
-    print(image_input)
     myconfig = r"--psm 6 --oem 3"
     global img
     img = cv2.imread(image_input)
@@ -216,7 +209,6 @@ def read_and_process(image_input):
         # cv2.imshow("test", thresh)
         # cv2.waitKey(0)
     cv2.destroyAllWindows()
-    print(t_value)
     ret, thresh = cv2.threshold(img, t_value, 255, cv2.THRESH_BINARY)
     thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(thresh, 0, 255, cv2.THRESH_BINARY)
@@ -225,13 +217,8 @@ def read_and_process(image_input):
         thresh, config=myconfig, output_type=Output.DICT)
 
     texts = dataHSV['text']
-    print(texts)
     lineNums = dataHSV['line_num']
 
-    # print(dataHSV)
-
-    # print(texts)
-    newTexts = []
     lines = {
         0: [],
         1: [],
@@ -265,6 +252,10 @@ def read_and_process(image_input):
 
 
 def convert_time_to_seconds(time):
+    print(time)
+    match = re.search("[a-zA-Z]", time)
+    if(match):
+        return 0
     date_time = datetime.strptime(time, "%M:%S.%f")
 
     a_timedelta = date_time - datetime(1900, 1, 1)
@@ -296,9 +287,13 @@ def convert_drivers_csup_stats(list, is_quali):
 
 def make_driver_object(x):
     obj = {}
+    print("make_driver object")
+    print(x)
     for i in range(len(x)):
         driver = x[i]
+        print(driver['driver'])
         obj[driver['driver']] = driver
+    print(obj)
     return obj
 
 
@@ -307,6 +302,8 @@ def similar(a, b):
 
 
 def find_most_similar(key, list):
+    print(key)
+    print(list)
     maxSim = 0
     maxName = ''
     for driver in dict(list).keys():
@@ -322,6 +319,9 @@ def combine_drivers(result, quali):
     result = make_driver_object(result)
     quali = make_driver_object(quali)
     new_d = {}
+    print("combineDrivers --------------------------------")
+    print(result)
+    print(quali)
     for key in dict(result).keys():
         result_driver = result[key]
         quali_driver_name = find_most_similar(key, quali)
@@ -359,10 +359,8 @@ def find_fastest_lap(drivers):
 
 def find_header_row(lines):
     i = 0
-    print(lines)
     for line in list(lines):
         for el in line:
-            print(el)
             if el in ["POS", 'DRIVER', "CAR", "TIME", "GAP", "BEST", "PILOTE", "VOITURE", "FAHRER", "FAHRZEUG", "ZEIT", "BESTE", "ABSTAND", "RUNDE"]:
                 return i + 1
         i += 1
@@ -383,9 +381,14 @@ def main():
 
     quali_drivers = None
     if quali_input:
-        quali_arrays = read_and_process(quali_input)
+        lines = read_and_process(quali_input)
+        lines = lines.values()
+        firstDriverIndex = find_header_row(lines)
+        drivers = []
+        for infos in list(lines)[firstDriverIndex:firstDriverIndex + 12]:
+            drivers.append(get_driver_info(infos, True))
         quali_drivers = create_drivers(
-            get_driver_info(quali_arrays, True), True)
+            drivers, True)
 
     output(result_drivers, quali_drivers, outputFormat, outputFile)
 
